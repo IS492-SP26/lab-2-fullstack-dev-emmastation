@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { Send, Mail, Github, Linkedin, Twitter } from "lucide-react"
+import { Send, Mail, Github, Linkedin, Twitter, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { submitMessage } from "@/app/actions/submit-message"
 
 const socials = [
   { icon: Github, label: "GitHub", href: "https://github.com" },
@@ -15,10 +16,24 @@ const socials = [
 
 export function Contact() {
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setSubmitted(true)
+    setError(null)
+    setPending(true)
+
+    const formData = new FormData(e.currentTarget)
+    const result = await submitMessage(formData)
+
+    setPending(false)
+
+    if (result.success) {
+      setSubmitted(true)
+    } else {
+      setError(result.error ?? "Something went wrong. Please try again.")
+    }
   }
 
   return (
@@ -67,6 +82,7 @@ export function Contact() {
                     </Label>
                     <Input
                       id="name"
+                      name="name"
                       placeholder="Your name"
                       required
                       className="rounded-lg"
@@ -78,6 +94,7 @@ export function Contact() {
                     </Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       placeholder="you@example.com"
                       required
@@ -91,15 +108,28 @@ export function Contact() {
                   </Label>
                   <Textarea
                     id="message"
+                    name="message"
                     placeholder="Write your message here..."
                     rows={5}
                     required
                     className="rounded-lg resize-none"
                   />
                 </div>
-                <Button type="submit" size="lg" className="gap-2 rounded-full">
-                  <Send className="h-4 w-4" />
-                  Send Message
+                {error && (
+                  <p className="text-sm text-destructive">{error}</p>
+                )}
+                <Button type="submit" size="lg" className="gap-2 rounded-full" disabled={pending}>
+                  {pending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Send Message
+                    </>
+                  )}
                 </Button>
               </form>
             )}
